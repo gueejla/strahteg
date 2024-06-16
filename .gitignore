@@ -1,3 +1,7 @@
+### Project gitignore
+
+/node_modules
+
 ### Client gitignore
 
 # dependencies
