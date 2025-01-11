@@ -5,3 +5,9 @@ For the rules check out Stratego.PDF or the online link: [https://www.hasbro.com
 I will post updates here as I implement the game with React and Next.js
 
 Implementation will be live at http://stratego.live/
+
+Run dev environment (once [node](https://nodejs.org/en/download) is installed) with:
+
+`npm run dependencies`
+
+`npm run dev`
