@@ -8,8 +8,6 @@ Implementation will be live at http://stratego.live/
 
 Run dev environment (once [node](https://nodejs.org/en/download) is installed) with:
 
-`npm i`
-
 `npm run dependencies`
 
 `npm run dev`
