@@ -1,13 +1,14 @@
 {
   "name": "stratego",
   "version": "0.1.0",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
-    "client": "npm run dev --prefix client",
-    "server": "npm run dev --prefix server",
-    "dev": "concurrently \"npm run client\" \"npm run server\"",
-    "install_client": "cd client && npm install",
-    "install_server": "cd server && npm install",
-    "dependencies": "npm i && concurrently \"npm run install_client\" \"npm run install_server\""
+    "client": "npm run dev --workspace=client",
+    "server": "npm run dev --workspace=server",
+    "dev": "concurrently \"npm run client\" \"npm run server\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
