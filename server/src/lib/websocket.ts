@@ -79,15 +79,19 @@ export function sendMessage(ws: WebSocket, message: WebSocketMessage) {
 // Broadcast message to all connected clients
 export function broadcastMessage(message: WebSocketMessage, excludeWs?: WebSocket) {
   if (!wss) {
-    console.warn('WebSocket server not initialized');
+    console.warn('WebSocket server not initialized - this is normal when called from API routes');
     return;
   }
   
+  let broadcastCount = 0;
   wss.clients.forEach((client) => {
     if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify(message));
+      broadcastCount++;
     }
   });
+  
+  console.log(`Broadcasted message to ${broadcastCount} clients`);
 }
 
 // Get connected clients count
