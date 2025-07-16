@@ -30,7 +30,7 @@ export function initializeWebSocketServer(server: any) {
           if (message.type === 'gameStateUpdate') {
             const gameState: GameState = {
               gameStartTime: new Date().toISOString(),
-              lastMoveBy: 'server',
+              lastMoveBy: 'player1',
               lastMoveMade: 'Hello World!'
             };
             
