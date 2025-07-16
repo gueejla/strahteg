@@ -1,17 +1,13 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { parse } from 'url';
 import next from 'next';
-import { initializeWebSocketServer, broadcastMessage, getConnectedClientsCount } from './src/lib/websocket';
+import { initializeWebSocketServer, handleBroadcastRequest } from './src/lib/websocket';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = 3001;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'http://localhost:3000',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+
 
 // Prepare the Next.js app
 const app = next({ dev, hostname, port });
@@ -22,7 +18,7 @@ app.prepare().then(() => {
     try {
       const parsedUrl = parse(req.url!, true);
       
-      // Handle broadcast endpoint directly
+      // Handle broadcast endpoint directly to ensure WebSocket server access
       if (parsedUrl.pathname === '/api/broadcast' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -32,28 +28,26 @@ app.prepare().then(() => {
         req.on('end', () => {
           try {
             const data = JSON.parse(body);
+            const result = handleBroadcastRequest(data);
             
-            // Broadcast message to all connected WebSocket clients
-            broadcastMessage({
-              type: 'broadcast',
-              data: data,
-              timestamp: new Date().toISOString()
-            });
-            
-            res.writeHead(200, {
+            res.writeHead(result.success ? 200 : 503, {
               'Content-Type': 'application/json',
-              ...corsHeaders,
+              'Access-Control-Allow-Origin': 'http://localhost:3000',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type',
             });
             res.end(JSON.stringify({
-              success: true,
-              message: 'Message broadcasted to all connected clients',
-              connectedClients: getConnectedClientsCount(),
+              success: result.success,
+              message: result.message,
+              connectedClients: result.connectedClients,
               data: data
             }));
           } catch (error) {
             res.writeHead(400, {
               'Content-Type': 'application/json',
-              ...corsHeaders,
+              'Access-Control-Allow-Origin': 'http://localhost:3000',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type',
             });
             res.end(JSON.stringify({ error: 'Invalid JSON' }));
           }
@@ -63,7 +57,11 @@ app.prepare().then(() => {
       
       // Handle OPTIONS for CORS preflight
       if (parsedUrl.pathname === '/api/broadcast' && req.method === 'OPTIONS') {
-        res.writeHead(200, corsHeaders);
+        res.writeHead(200, {
+          'Access-Control-Allow-Origin': 'http://localhost:3000',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        });
         res.end();
         return;
       }
