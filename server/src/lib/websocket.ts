@@ -107,16 +107,6 @@ export function broadcastMessage(message: WebSocketGameMessage, excludeWs?: WebS
   console.log(`Broadcasted message to ${broadcastCount} clients`);
 }
 
-// Get connected clients count
-export function getConnectedClientsCount(): number {
-  return wss ? wss.clients.size : 0;
-}
-
-// Get WebSocket server instance
-export function getWebSocketServer(): WebSocketServer | null {
-  return wss;
-}
-
 // Cleanup function
 export function cleanup() {
   if (wss) {
