@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 
 interface WebSocketMessage {
-  type: 'connection' | 'echo' | 'broadcast' | 'error' | 'custom' | 'pong';
-  data?: unknown;
-  message?: string;
+  type: 'connection' | 'disconnect';
+  message: string;
   timestamp: string;
 }
 
@@ -11,10 +10,7 @@ export function ApiMessage() {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting')
   const [lastMessage, setLastMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
-  const [broadcastMessage, setBroadcastMessage] = useState<string>('')
-  const [isSending, setIsSending] = useState<boolean>(false)
   const wsRef = useRef<WebSocket | null>(null)
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const connectWebSocket = () => {
     try {
@@ -26,16 +22,6 @@ export function ApiMessage() {
         console.log('WebSocket connected')
         setConnectionStatus('connected')
         setError('')
-        
-        // Start heartbeat to keep connection alive
-        heartbeatIntervalRef.current = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'ping',
-              timestamp: new Date().toISOString()
-            }))
-          }
-        }, 30000) // Send ping every 30 seconds
       }
       
       ws.onmessage = (event) => {
@@ -44,16 +30,11 @@ export function ApiMessage() {
           console.log('Received WebSocket message:', message)
           
           if (message.type === 'connection') {
-            setLastMessage(`Connected: ${message.message}`)
-          } else if (message.type === 'echo') {
-            setLastMessage(`Echo received: ${JSON.stringify(message.data)}`)
-          } else if (message.type === 'broadcast') {
-            setLastMessage(`Broadcast: ${JSON.stringify(message.data)}`)
-          } else if (message.type === 'pong') {
-            // Server responded to our ping, connection is alive
-            console.log('Received pong from server')
+            setLastMessage(`Connected: ${message.message} at ${message.timestamp}`)
+          } else if (message.type === 'disconnect') {
+            setLastMessage(`Disconnect: ${message.message}`)
           } else {
-            setLastMessage(`Message: ${message.message || JSON.stringify(message.data)}`)
+            setLastMessage(`Message: ${message.message}`)
           }
         } catch {
           setLastMessage(`Raw message: ${event.data}`)
@@ -63,12 +44,6 @@ export function ApiMessage() {
       ws.onclose = (event) => {
         console.log('WebSocket disconnected', event.code, event.reason)
         setConnectionStatus('disconnected')
-        
-        // Clear heartbeat interval
-        if (heartbeatIntervalRef.current) {
-          clearInterval(heartbeatIntervalRef.current)
-          heartbeatIntervalRef.current = null
-        }
       }
       
       ws.onerror = (error) => {
@@ -80,34 +55,6 @@ export function ApiMessage() {
     } catch (err) {
       setConnectionStatus('error')
       setError(err instanceof Error ? err.message : 'Failed to create WebSocket connection')
-    }
-  }
-
-  const sendBroadcast = async () => {
-    if (!broadcastMessage.trim()) return
-    
-    setIsSending(true)
-    try {
-      const response = await fetch('http://localhost:3001/api/broadcast', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: broadcastMessage }),
-      })
-      
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Broadcast sent successfully:', result)
-        setBroadcastMessage('')
-      } else {
-        setError('Failed to send broadcast')
-      }
-    } catch (err) {
-      setError('Failed to send broadcast')
-      console.error('Broadcast error:', err)
-    } finally {
-      setIsSending(false)
     }
   }
 
@@ -132,11 +79,6 @@ export function ApiMessage() {
 
     // Cleanup function
     return () => {
-      // Clear heartbeat interval
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current)
-      }
-      
       // Close WebSocket connection
       if (wsRef.current) {
         wsRef.current.close(1000, 'Component unmounting')
@@ -209,27 +151,6 @@ export function ApiMessage() {
       <p className="text-xs text-gray-500">
         Connecting to: ws://localhost:3001
       </p>
-      
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <h4 className="font-medium mb-2">Broadcast Message</h4>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={broadcastMessage}
-            onChange={(e) => setBroadcastMessage(e.target.value)}
-            placeholder="Enter message to broadcast..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onKeyPress={(e) => e.key === 'Enter' && sendBroadcast()}
-          />
-          <button
-            onClick={sendBroadcast}
-            disabled={isSending || !broadcastMessage.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSending ? 'Sending...' : 'Send'}
-          </button>
-        </div>
-      </div>
     </div>
   )
 } 

@@ -18,7 +18,7 @@ export function initializeWebSocketServer(server: any) {
         message: 'Connected to WebSocket server',
         timestamp: new Date().toISOString()
       };
-      sendMessage(ws, connectionMessage);
+      broadcastMessage(connectionMessage, ws);
       
       // Handle incoming messages
       ws.on('message', (data: Buffer) => {
@@ -40,7 +40,7 @@ export function initializeWebSocketServer(server: any) {
               timestamp: new Date().toISOString()
             };
             
-            sendMessage(ws, gameStateMessage);
+          broadcastMessage(gameStateMessage, ws);
           } else {
             // Send error for unknown message types
             const errorMessage: ErrorMessage = {
@@ -48,7 +48,7 @@ export function initializeWebSocketServer(server: any) {
               message: 'Unknown message type',
               timestamp: new Date().toISOString()
             };
-            sendMessage(ws, errorMessage);
+            broadcastMessage(errorMessage, ws);
           }
         } catch (error) {
           console.error('Error parsing message:', error);
@@ -57,7 +57,7 @@ export function initializeWebSocketServer(server: any) {
             message: 'Invalid JSON format',
             timestamp: new Date().toISOString()
           };
-          sendMessage(ws, errorMessage);
+          broadcastMessage(errorMessage, ws);
         }
       });
       
@@ -112,11 +112,6 @@ export function getConnectedClientsCount(): number {
   return wss ? wss.clients.size : 0;
 }
 
-// Check if WebSocket server is available
-export function isWebSocketServerAvailable(): boolean {
-  return wss !== null;
-}
-
 // Get WebSocket server instance
 export function getWebSocketServer(): WebSocketServer | null {
   return wss;
@@ -127,45 +122,5 @@ export function cleanup() {
   if (wss) {
     wss.close();
     wss = null;
-  }
-}
-
-// HTTP endpoint handler for broadcasting from API routes
-export function handleBroadcastRequest(body: any): { success: boolean; message: string; connectedClients: number } {
-  if (!wss) {
-    return {
-      success: false,
-      message: 'WebSocket server not available',
-      connectedClients: 0
-    };
-  }
-
-  try {
-    const gameState: GameState = {
-      gameStartTime: new Date().toISOString(),
-      lastMoveBy: body.lastMoveBy || 'unknown',
-      lastMoveMade: body.lastMoveMade || 'broadcast message'
-    };
-    
-    const gameStateMessage: GameStateMessage = {
-      type: 'gameStateUpdate',
-      data: gameState,
-      timestamp: new Date().toISOString()
-    };
-    
-    broadcastMessage(gameStateMessage);
-    
-    return {
-      success: true,
-      message: 'Message broadcasted to all connected clients',
-      connectedClients: getConnectedClientsCount()
-    };
-  } catch (error) {
-    console.error('Broadcast error:', error);
-    return {
-      success: false,
-      message: 'Failed to broadcast message',
-      connectedClients: getConnectedClientsCount()
-    };
   }
 } 

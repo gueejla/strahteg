@@ -1,13 +1,11 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { parse } from 'url';
 import next from 'next';
-import { initializeWebSocketServer, handleBroadcastRequest } from './src/lib/websocket';
+import { initializeWebSocketServer } from './src/lib/websocket';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = 3001;
-
-
 
 // Prepare the Next.js app
 const app = next({ dev, hostname, port });
@@ -17,55 +15,6 @@ app.prepare().then(() => {
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     try {
       const parsedUrl = parse(req.url!, true);
-      
-      // Handle broadcast endpoint directly to ensure WebSocket server access
-      if (parsedUrl.pathname === '/api/broadcast' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-          body += chunk.toString();
-        });
-        
-        req.on('end', () => {
-          try {
-            const data = JSON.parse(body);
-            const result = handleBroadcastRequest(data);
-            
-            res.writeHead(result.success ? 200 : 503, {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': 'http://localhost:3000',
-              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type',
-            });
-            res.end(JSON.stringify({
-              success: result.success,
-              message: result.message,
-              connectedClients: result.connectedClients,
-              data: data
-            }));
-          } catch (error) {
-            res.writeHead(400, {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': 'http://localhost:3000',
-              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type',
-            });
-            res.end(JSON.stringify({ error: 'Invalid JSON' }));
-          }
-        });
-        return;
-      }
-      
-      // Handle OPTIONS for CORS preflight
-      if (parsedUrl.pathname === '/api/broadcast' && req.method === 'OPTIONS') {
-        res.writeHead(200, {
-          'Access-Control-Allow-Origin': 'http://localhost:3000',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        });
-        res.end();
-        return;
-      }
-      
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);
