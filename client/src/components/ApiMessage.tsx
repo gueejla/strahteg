@@ -1,10 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-
-interface WebSocketMessage {
-  type: 'connection' | 'disconnect';
-  message: string;
-  timestamp: string;
-}
+import { WebSocketGameMessage } from '../lib/types'
 
 export function ApiMessage() {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting')
@@ -26,15 +21,15 @@ export function ApiMessage() {
       
       ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data)
+          const message: WebSocketGameMessage = JSON.parse(event.data)
           console.log('Received WebSocket message:', message)
           
           if (message.type === 'connection') {
-            setLastMessage(`Connected: ${message.message} at ${message.timestamp}`)
+            setLastMessage(`Connected: ${message} at ${message.timestamp}`)
           } else if (message.type === 'disconnect') {
-            setLastMessage(`Disconnect: ${message.message}`)
+            setLastMessage(`Disconnect: ${message}`)
           } else {
-            setLastMessage(`Message: ${message.message}`)
+            setLastMessage(`Message: ${message}`)
           }
         } catch {
           setLastMessage(`Raw message: ${event.data}`)

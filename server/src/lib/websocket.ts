@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { WebSocketGameMessage, ConnectionMessage, ErrorMessage, GameStateMessage, GameState } from './types';
+import { WebSocketGameMessage, ConnectionMessage, ErrorMessage, GameUpdateMessage, GameUpdate } from './types';
 
 // Global WebSocket server instance
 let wss: WebSocketServer | null = null;
@@ -28,14 +28,13 @@ export function initializeWebSocketServer(server: any) {
           
           // Handle game state update requests
           if (message.type === 'gameStateUpdate') {
-            const gameState: GameState = {
-              gameStartTime: new Date().toISOString(),
-              lastMoveBy: 'player1',
-              lastMoveMade: 'Hello World!'
+            const gameState: GameUpdate = {
+              player: '1',
+              move: 'D1D2',
             };
             
-            const gameStateMessage: GameStateMessage = {
-              type: 'gameStateUpdate',
+            const gameStateMessage: GameUpdateMessage = {
+              type: 'gameUpdate',
               data: gameState,
               timestamp: new Date().toISOString()
             };
